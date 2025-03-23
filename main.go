@@ -1,11 +1,10 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 
 	"github.com/ei-sugimoto/mendou/internal/pkg/hello"
+	"github.com/ei-sugimoto/mendou/internal/pkg/tatekae"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -26,7 +25,7 @@ func main() {
 		),
 	)
 
-	tatekae := mcp.NewTool("tatekae",
+	tatekaeTool := mcp.NewTool("tatekae",
 		mcp.WithDescription("tatekaeは、立替による取引回数を最適化するためのツールです"),
 		mcp.WithArray("members", mcp.Items(map[string]interface{}{
 			"type": "string",
@@ -48,33 +47,14 @@ func main() {
 	)
 
 	helloHandler := hello.NewHelloHandler()
+	tatekaeHandler := tatekae.NewTatekaeHandler()
 
 	// Add tool handler
 	s.AddTool(tool, helloHandler.Handle)
-	s.AddTool(tatekae, tatekaeHandler)
+	s.AddTool(tatekaeTool, tatekaeHandler.Handle)
 
 	// Start the stdio server
 	if err := server.ServeStdio(s); err != nil {
 		fmt.Printf("Server error: %v\n", err)
 	}
-}
-
-func tatekaeHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// 型アサーションで []interface{} を取得
-	rawMembers, ok := request.Params.Arguments["members"].([]interface{})
-	if !ok {
-		return nil, errors.New("members must be an array")
-	}
-
-	// []interface{} を []string に変換
-	members := make([]string, len(rawMembers))
-	for i, v := range rawMembers {
-		str, ok := v.(string)
-		if !ok {
-			return nil, errors.New("all members must be strings")
-		}
-		members[i] = str
-	}
-
-	return mcp.NewToolResultText(fmt.Sprintf("Hello, %s!", members)), nil
 }
